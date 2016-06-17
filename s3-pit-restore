@@ -36,13 +36,10 @@ transfer = None
 futures = {}
 
 class TestS3PitRestore(unittest.TestCase):
-    contents_before = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
-    contents_after = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
-    path = None
 
-    def generate_tree(self, contents):
+    def generate_tree(self, path, contents):
         for i, content in enumerate(contents):
-            folder_path = os.path.join(self.__class__.path, "folder%d" % i)
+            folder_path = os.path.join(path, "folder%d" % i)
             os.makedirs(folder_path, exist_ok=True)
             file_path = os.path.join(folder_path, "file%d" % i)
 
@@ -50,9 +47,9 @@ class TestS3PitRestore(unittest.TestCase):
                 outfile.write(content)
             print(file_path, content)
 
-    def check_tree(self, contents):
+    def check_tree(self, path, contents):
         for i, content in enumerate(contents):
-            folder_path = os.path.join(self.__class__.path, "folder%d" % i)
+            folder_path = os.path.join(path, "folder%d" % i)
             os.makedirs(folder_path, exist_ok=True)
             file_path = os.path.join(folder_path, "file%d" % i)
 
@@ -74,26 +71,30 @@ class TestS3PitRestore(unittest.TestCase):
                 resource.meta.client.upload_file(os.path.join(root,f), bucketname, s3_path)
 
     def test_restore(self):
-        self.__class__.path = os.path.join(args.dest, "test-s3-pit-restore")
+        contents_before = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
+        contents_after = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
+        path = os.path.join(args.dest, "test-s3-pit-restore")
         s3 = boto3.resource('s3')
+
         print("Before ...")
-        self.generate_tree(self.__class__.contents_before)
-        self.upload_directory(s3, self.__class__.path, args.bucket)
+        self.generate_tree(path, contents_before)
+        self.upload_directory(s3, path, args.bucket)
         time.sleep(1)
         time_before = datetime.now(timezone.utc)
-        print("After ...")
-        self.generate_tree(self.__class__.contents_after)
-        self.upload_directory(s3, self.__class__.path, args.bucket)
-        shutil.rmtree(self.__class__.path)
+
+        print("Upload and owerwriting ...")
+        self.generate_tree(path, contents_after)
+        self.upload_directory(s3, path, args.bucket)
+        shutil.rmtree(path)
 
         args.timestamp = str(time_before)
-        args.prefix = os.path.basename(os.path.normpath(self.__class__.path))
+        args.prefix = os.path.basename(os.path.normpath(path))
         restore_stdout = sys.stdout
         sys.stdout = open(os.devnull, 'w')
         do_restore()
         sys.stdout = restore_stdout
-        print("REstoring and checking ...")
-        self.assertTrue(self.check_tree(self.__class__.contents_before))
+        print("Restoring and checking ...")
+        self.assertTrue(self.check_tree(path, contents_before))
 
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
