@@ -26,33 +26,74 @@
 # SOFTWARE.
 
 import os, sys, time, signal, argparse, boto3, botocore, \
-        unittest, concurrent.futures, shutil
-from datetime import datetime
+        unittest, concurrent.futures, shutil, uuid, time
+from datetime import datetime, timezone
 from dateutil.parser import parse
 
-executor = None
 args = None
+executor = None
 transfer = None
 futures = {}
 
 class TestS3PitRestore(unittest.TestCase):
+    contents_before = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
+    contents_after = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
+    path = None
 
-    def setUp(self):
-        path = "/tmp/test-s3-pit-restore/"
-        for content in ("A", "B", "C"):
-            for i in range(0,3):
-                folder_path = os.path.join(path, "folder%d" % i)
-                os.makedirs(folder_path, exist_ok=True)
-                file_path = os.path.join(folder_path, "file%d" % i)
+    def generate_tree(self, contents):
+        for i, content in enumerate(contents):
+            folder_path = os.path.join(self.__class__.path, "folder%d" % i)
+            os.makedirs(folder_path, exist_ok=True)
+            file_path = os.path.join(folder_path, "file%d" % i)
 
-                with open(file_path, 'w') as outfile:
-                    outfile.write(content)
+            with open(file_path, 'w') as outfile:
+                outfile.write(content)
+            print(file_path, content)
 
-    def tearDown(self):
-        print("bar")
+    def check_tree(self, contents):
+        for i, content in enumerate(contents):
+            folder_path = os.path.join(self.__class__.path, "folder%d" % i)
+            os.makedirs(folder_path, exist_ok=True)
+            file_path = os.path.join(folder_path, "file%d" % i)
+
+            in_content=""
+            with open(file_path, 'r') as infile:
+                in_content = infile.read()
+                print(file_path, content, "<>", in_content)
+                if in_content != content:
+                    return False
+        return True
+
+    def upload_directory(self, resource, path, bucketname):
+        for root,dirs,files in os.walk(path):
+            for f in files:
+                base_path = os.path.basename(os.path.normpath(path))
+                local_path = os.path.join(root, f)
+                relative_path = os.path.relpath(local_path, path)
+                s3_path = os.path.join(base_path, relative_path)                
+                resource.meta.client.upload_file(os.path.join(root,f), bucketname, s3_path)
 
     def test_restore(self):
-        self.assertEqual('foo'.upper(), 'FOO')
+        self.__class__.path = os.path.join(args.dest, "test-s3-pit-restore")
+        s3 = boto3.resource('s3')
+        print("Before ...")
+        self.generate_tree(self.__class__.contents_before)
+        self.upload_directory(s3, self.__class__.path, args.bucket)
+        time.sleep(1)
+        time_before = datetime.now(timezone.utc)
+        print("After ...")
+        self.generate_tree(self.__class__.contents_after)
+        self.upload_directory(s3, self.__class__.path, args.bucket)
+        shutil.rmtree(self.__class__.path)
+
+        args.timestamp = str(time_before)
+        args.prefix = os.path.basename(os.path.normpath(self.__class__.path))
+        restore_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+        do_restore()
+        sys.stdout = restore_stdout
+        print("REstoring and checking ...")
+        self.assertTrue(self.check_tree(self.__class__.contents_before))
 
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
@@ -105,6 +146,7 @@ def handled_by_standard(obj):
     try:
         if not args.dry_run:
             future = executor.submit(download_file, obj)
+            global futures
             futures[future] = obj
         else:
             print_obj(obj)
@@ -118,8 +160,20 @@ def download_file(obj):
     os.utime(obj["Key"],(unixtime, unixtime))
 
 def do_restore():
+    pit_date = (parse(args.timestamp) if args.timestamp else datetime.now())
+    client = boto3.client('s3')
+    global transfer
+    transfer = boto3.s3.transfer.S3Transfer(client)
+    dest = args.dest
+    last_obj = {}
+    objects = {}
+    last_obj["Key"] = ""
+    objects["IsTruncated"] = True
+    objects["NextKeyMarker"] = ""
+
     if args.debug: boto3.set_stream_logger()
 
+    global executor
     executor = concurrent.futures.ThreadPoolExecutor(args.max_workers)
 
     if not os.path.exists(dest):
@@ -164,16 +218,6 @@ if __name__=='__main__':
     parser.add_argument('--test', help='s3 pit restore testing', action='store_true')
     parser.add_argument('--max-workers', help='max number of concurrent download requests', default=10, type=int)
     args = parser.parse_args()
-
-    pit_date = (parse(args.timestamp) if args.timestamp else datetime.now())
-    client = boto3.client('s3')
-    transfer = boto3.s3.transfer.S3Transfer(client)
-    dest = args.dest
-    last_obj = {}
-    objects = {}
-    last_obj["Key"] = ""
-    objects["IsTruncated"] = True
-    objects["NextKeyMarker"] = ""
 
     if not args.test:
         do_restore()
