@@ -2,6 +2,8 @@
 #
 # MIT License
 #
+# s3-pit-restore, a point in time restore tool for Amazon S3
+#
 # Copyright (c) [2016] [Madisoft S.p.A.]
 #
 # Author: Matteo Moretti <matteo.moretti@madisoft.it>
