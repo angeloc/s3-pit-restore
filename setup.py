@@ -30,11 +30,12 @@
 from distutils.core import setup
 
 setup(name='s3-pit-restore',
-      version='0.2',
+      version='0.3',
       description='s3-pit-restore, a point in time restore tool for Amazon S3',
       author='Angelo Compagnucci, Matteo Moretti',
       author_email='angelo.compagnucci@gmail.com, matteo.moretti@gmail.com',
       url='https://github.com/madisoft/s3-pit-restore/',
       keywords = ['amazon', 's3', 'restore', 'point', 'time', 'timestamp'],
-      scripts=['s3-pit-restore']
+      scripts=['s3-pit-restore'],
+      install_requires=['boto3']
      )
