@@ -28,3 +28,9 @@ With pip install:
 or clone the repository and launch:
 
 `:~# python3 setup.py install`
+
+## Testing
+
+s3-pit-restore comes with a testing suite. You can run it with:
+
+`./s3-pit-restore -b my-bucket -d /tmp/ --test`
