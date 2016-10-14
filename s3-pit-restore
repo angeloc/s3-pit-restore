@@ -169,7 +169,7 @@ def download_file(obj):
     os.utime(obj["Key"],(unixtime, unixtime))
 
 def do_restore():
-    pit_date = (parse(args.timestamp) if args.timestamp else datetime.now())
+    pit_date = (parse(args.timestamp) if args.timestamp else datetime.now(timezone.utc))
     client = boto3.client('s3')
     global transfer
     transfer = boto3.s3.transfer.S3Transfer(client)
