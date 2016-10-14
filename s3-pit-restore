@@ -169,7 +169,8 @@ def download_file(obj):
     os.utime(obj["Key"],(unixtime, unixtime))
 
 def do_restore():
-    pit_date = (parse(args.timestamp) if args.timestamp else datetime.now(timezone.utc))
+    pit_start_date = (parse(args.from_timestamp) if args.from_timestamp else datetime.fromtimestamp(0, timezone.utc))
+    pit_end_date = (parse(args.timestamp) if args.timestamp else datetime.now(timezone.utc))
     client = boto3.client('s3')
     global transfer
     transfer = boto3.s3.transfer.S3Transfer(client)
@@ -197,7 +198,9 @@ def do_restore():
             print("No versions matching criteria, exiting ...")
             sys.exit(1)
         for obj in objects["Versions"]:
-            if last_obj["Key"] != obj["Key"] and obj["LastModified"] <= pit_date:
+            if last_obj["Key"] != obj["Key"] and \
+                obj["LastModified"] >= pit_start_date and \
+                    obj["LastModified"] <= pit_end_date:
                 last_obj = obj
 
                 if handled_by_glacier(obj):
@@ -218,7 +221,8 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--bucket', help='s3 bucket to restore from', required=True)
     parser.add_argument('-p', '--prefix', help='s3 path to restore from', default="")
-    parser.add_argument('-t', '--timestamp', help='point in time to restore at')
+    parser.add_argument('-t', '--timestamp', help='final point in time to restore at')
+    parser.add_argument('-f', '--from-timestamp', help='starting point in time to restore from')
     parser.add_argument('-d', '--dest', help='path where recovering to', required=True)
     parser.add_argument('-e', '--enable-glacier', help='enable recovering from glacier', action='store_true')
     parser.add_argument('-v', '--verbose', help='print verbose informations from s3 objects', action='store_true')
