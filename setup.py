@@ -30,7 +30,7 @@
 from distutils.core import setup
 
 setup(name='s3-pit-restore',
-      version='0.4',
+      version='0.5',
       description='s3-pit-restore, a point in time restore tool for Amazon S3',
       author='Angelo Compagnucci, Matteo Moretti',
       author_email='angelo.compagnucci@gmail.com, matteo.moretti@gmail.com',
