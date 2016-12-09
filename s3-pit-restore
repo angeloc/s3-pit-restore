@@ -147,7 +147,7 @@ def handled_by_glacier(obj):
 def handled_by_standard(obj):
     if obj["Key"].endswith("/"):
         if not os.path.exists(obj["Key"]):
-            os.makedirs(key)
+            os.makedirs(obj["Key"])
         return True
     key_path = os.path.dirname(obj["Key"])
     if key_path and not os.path.exists(key_path):
