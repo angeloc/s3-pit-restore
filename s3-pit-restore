@@ -89,6 +89,7 @@ class TestS3PitRestore(unittest.TestCase):
         self.upload_directory(s3, path, args.bucket)
         time.sleep(1)
         time_before = datetime.now(timezone.utc)
+        shutil.rmtree(path)
 
         print("Upload and owerwriting ...")
         self.generate_tree(path, contents_after)
@@ -98,9 +99,7 @@ class TestS3PitRestore(unittest.TestCase):
         args.timestamp = str(time_before)
         args.prefix = os.path.basename(os.path.normpath(path))
         restore_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
         do_restore()
-        sys.stdout = restore_stdout
         print("Restoring and checking ...")
         self.assertTrue(self.check_tree(path, contents_before))
 
