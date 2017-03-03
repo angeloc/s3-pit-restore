@@ -206,12 +206,15 @@ def do_restore():
                     continue
 
                 if not handled_by_standard(obj):
-                    objects["IsTruncated"] == False
-                    break
+                    return
 
         for future in concurrent.futures.as_completed(futures):
             if future in futures:
-                print_obj(futures[future])
+                try:
+                    future.result()
+                    print_obj(futures[future])
+                except Exception as ex:
+                    print('"%s" %s %s %s %s "ERROR: %s"' % (obj["LastModified"], obj["VersionId"], obj["Size"], obj["StorageClass"], obj["Key"], ex), file=sys.stderr)
                 del(futures[future])
 
 if __name__=='__main__':
