@@ -180,7 +180,7 @@ def do_restore():
     objects["IsTruncated"] = True
     objects["NextKeyMarker"] = ""
 
-    if args.debug: boto3.set_stream_logger()
+    if args.debug: boto3.set_stream_logger('botocore')
 
     global executor
     executor = concurrent.futures.ThreadPoolExecutor(args.max_workers)
