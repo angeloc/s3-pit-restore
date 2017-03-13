@@ -75,7 +75,7 @@ class TestS3PitRestore(unittest.TestCase):
     def test_restore(self):
         contents_before = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
         contents_after = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
-        path = os.path.join(args.dest, "test-s3-pit-restore")
+        path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-restore")
         s3 = boto3.resource('s3')
         bucket_versioning = s3.BucketVersioning(args.bucket)
         bucket_versioning.load()
