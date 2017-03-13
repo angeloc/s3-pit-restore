@@ -98,7 +98,6 @@ class TestS3PitRestore(unittest.TestCase):
 
         args.timestamp = str(time_before)
         args.prefix = os.path.basename(os.path.normpath(path))
-        restore_stdout = sys.stdout
         do_restore()
         print("Restoring and checking ...")
         self.assertTrue(self.check_tree(path, contents_before))
