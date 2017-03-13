@@ -73,8 +73,8 @@ class TestS3PitRestore(unittest.TestCase):
                 resource.meta.client.upload_file(os.path.join(root,f), bucketname, s3_path)
 
     def test_restore(self):
-        contents_before = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
-        contents_after = [str(uuid.uuid4()), str(uuid.uuid4()), str(uuid.uuid4())]
+        contents_before = [ str(uuid.uuid4()) for n in range(32) ]
+        contents_after =  [ str(uuid.uuid4()) for n in range(32) ]
         path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-restore")
         s3 = boto3.resource('s3')
         bucket_versioning = s3.BucketVersioning(args.bucket)
