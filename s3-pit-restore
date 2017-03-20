@@ -193,7 +193,7 @@ def do_restore():
     while (objects["IsTruncated"] == True):
         objects = client.list_object_versions(Bucket=args.bucket, Prefix=args.prefix, KeyMarker=objects["NextKeyMarker"])
         if not "Versions" in objects:
-            print("No versions matching criteria, exiting ...")
+            print("No versions matching criteria, exiting ...", file=sys.stderr)
             sys.exit(1)
         for obj in objects["Versions"]:
             if last_obj["Key"] != obj["Key"] and \
