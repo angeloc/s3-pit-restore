@@ -10,7 +10,7 @@ the files to a certain point in time.
 Doing this with the web interface is time consuming: Amazon S3 web management
 gui doesn't offer a simple way to do that on a massive scale.
 
-With this tool you can easly restore a repository to a point in time
+With this tool you can easily restore a repository to a point in time
 with a simple command like this:
 
 `:~$ s3-pit-restore -b my-bucket -d my-restored-bucket -t "06-17-2016 23:59:50 +2"`
@@ -43,11 +43,11 @@ You can also speedup the download if you have bandwidth using more parallel work
 
 `:~# s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2" --max-workers 100`
 
-If want to restore a well definided time span, you can use a starting and ending timestamp (a month in this example):
+If want to restore a well defined time span, you can use a starting and ending timestamp (a month in this example):
 
 `:~# s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -f "05-01-2016 00:00:00 +2" -t "06-01-2016 00:00:00 +2"`
 
-## Comamnd line options
+## Command line options
 
 ```
 usage: s3-pit-restore [-h] -b BUCKET [-p PREFIX] [-t TIMESTAMP]
