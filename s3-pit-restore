@@ -195,17 +195,36 @@ def do_restore():
         if not "Versions" in objects:
             print("No versions matching criteria, exiting ...", file=sys.stderr)
             sys.exit(1)
-        for obj in objects["Versions"]:
-            if last_obj["Key"] != obj["Key"] and \
-                obj["LastModified"] >= pit_start_date and \
-                    obj["LastModified"] <= pit_end_date:
-                last_obj = obj
+        versions = objects["Versions"]
+        deletemarkers = objects["DeleteMarkers"]
+        dmarker = {"Key":""}
+        for obj in versions:
+            if last_obj["Key"] == obj["Key"]:
+                # We've had a newer version or a delete of this key
+                continue
 
-                if handled_by_glacier(obj):
-                    continue
+            version_date = obj["LastModified"]
 
-                if not handled_by_standard(obj):
-                    return
+            if version_date > pit_end_date or version_date < pit_start_date:
+                # Object was not updated during pit window
+                continue
+
+            while deletemarkers and (dmarker["Key"] < obj["Key"] or dmarker["LastModified"] > pit_end_date):
+                dmarker = deletemarkers.pop(0)
+
+            if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"]:
+                # The mostresent operation on this key was a delete
+                last_obj = dmarker
+                continue
+
+            # This version needs to be restored..
+            last_obj = obj
+
+            if handled_by_glacier(obj):
+                continue
+
+            if not handled_by_standard(obj):
+                return
 
         for future in concurrent.futures.as_completed(futures):
             if future in futures:
