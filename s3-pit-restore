@@ -196,7 +196,7 @@ def do_restore():
             print("No versions matching criteria, exiting ...", file=sys.stderr)
             sys.exit(1)
         versions = objects["Versions"]
-        deletemarkers = objects["DeleteMarkers"]
+        deletemarkers = objects.get("DeleteMarkers", [])
         dmarker = {"Key":""}
         for obj in versions:
             if last_obj["Key"] == obj["Key"]:
