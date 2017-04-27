@@ -180,10 +180,7 @@ def do_restore():
     transfer = boto3.s3.transfer.S3Transfer(client)
     dest = args.dest
     last_obj = {}
-    objects = {}
     last_obj["Key"] = ""
-    objects["IsTruncated"] = True
-    objects["NextKeyMarker"] = ""
 
     if args.debug: boto3.set_stream_logger('botocore')
 
@@ -196,8 +193,8 @@ def do_restore():
     os.chdir(dest)
 
     # AWS gives us versions chunks of maximum 1000 element, cycling here to obtain more
-    while (objects["IsTruncated"] == True):
-        objects = client.list_object_versions(Bucket=args.bucket, Prefix=args.prefix, KeyMarker=objects["NextKeyMarker"])
+    objects = client.list_object_versions(Bucket=args.bucket, Prefix=args.prefix) # cannot pass VersionIdMarker on first call
+    while (True):
         if not "Versions" in objects:
             print("No versions matching criteria, exiting ...", file=sys.stderr)
             sys.exit(1)
@@ -221,6 +218,14 @@ def do_restore():
                 except Exception as ex:
                     print('"%s" %s %s %s %s "ERROR: %s"' % (obj["LastModified"], obj["VersionId"], obj["Size"], obj["StorageClass"], obj["Key"], ex), file=sys.stderr)
                 del(futures[future])
+
+        if objects["IsTruncated"]:
+            # More objects to be got
+            objects = client.list_object_versions(Bucket=args.bucket, Prefix=args.prefix, \
+                KeyMarker=objects["NextKeyMarker"], VersionIdMarker=objects["NextVersionIdMarker"])
+        else:
+            break
+
 
 if __name__=='__main__':
     signal.signal(signal.SIGINT, signal_handler)
