@@ -31,6 +31,7 @@ import os, sys, time, signal, argparse, boto3, botocore, \
         unittest, concurrent.futures, shutil, uuid, time
 from datetime import datetime, timezone
 from dateutil.parser import parse
+from s3transfer.manager import TransferConfig
 
 args = None
 executor = None
@@ -64,17 +65,18 @@ class TestS3PitRestore(unittest.TestCase):
         return True
 
     def upload_directory(self, resource, path, bucketname):
-        for root,dirs,files in os.walk(path):
-            for f in files:
-                base_path = os.path.basename(os.path.normpath(path))
-                local_path = os.path.join(root, f)
-                relative_path = os.path.relpath(local_path, path)
-                s3_path = os.path.join(base_path, relative_path)                
-                resource.meta.client.upload_file(os.path.join(root,f), bucketname, s3_path)
+        with concurrent.futures.ThreadPoolExecutor(args.max_workers) as e:                
+            for root,dirs,files in os.walk(path):
+                for f in files:
+                    base_path = os.path.basename(os.path.normpath(path))
+                    local_path = os.path.join(root, f)
+                    relative_path = os.path.relpath(local_path, path)
+                    s3_path = os.path.join(base_path, relative_path)
+                    e.submit(resource.meta.client.upload_file, os.path.join(root,f), bucketname, s3_path)
 
     def test_restore(self):
-        contents_before = [ str(uuid.uuid4()) for n in range(32) ]
-        contents_after =  [ str(uuid.uuid4()) for n in range(32) ]
+        contents_before = [ str(uuid.uuid4()) for n in range(2048) ]
+        contents_after =  [ str(uuid.uuid4()) for n in range(2048) ]
         path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-restore")
         s3 = boto3.resource('s3')
         bucket_versioning = s3.BucketVersioning(args.bucket)
@@ -85,18 +87,22 @@ class TestS3PitRestore(unittest.TestCase):
         print("enabled!")
 
         print("Before ...")
+        shutil.rmtree(path)
+        time_before = datetime.now(timezone.utc)
+        time.sleep(1)
         self.generate_tree(path, contents_before)
         self.upload_directory(s3, path, args.bucket)
-        time.sleep(1)
-        time_before = datetime.now(timezone.utc)
         shutil.rmtree(path)
 
         print("Upload and owerwriting ...")
+        time.sleep(1)
+        time_after = datetime.now(timezone.utc)
         self.generate_tree(path, contents_after)
         self.upload_directory(s3, path, args.bucket)
         shutil.rmtree(path)
 
-        args.timestamp = str(time_before)
+        args.from_timestamp = str(time_before)
+        args.timestamp = str(time_after)
         args.prefix = os.path.basename(os.path.normpath(path))
         do_restore()
         print("Restoring and checking ...")
