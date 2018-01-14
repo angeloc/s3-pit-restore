@@ -216,7 +216,7 @@ def do_restore():
                 dmarker = deletemarkers.pop(0)
 
             if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"]:
-                # The mostresent operation on this key was a delete
+                # The most recent operation on this key was a delete
                 last_obj = dmarker
                 continue
 
