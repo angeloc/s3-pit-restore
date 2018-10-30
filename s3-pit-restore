@@ -215,7 +215,8 @@ def do_restore():
             while deletemarkers and (dmarker["Key"] < obj["Key"] or dmarker["LastModified"] > pit_end_date):
                 dmarker = deletemarkers.pop(0)
 
-            if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"]:
+            #skip dmarker if it's latest than pit_end_date
+            if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"] and dmarker["LastModified"] <= pit_end_date:
                 # The most recent operation on this key was a delete
                 last_obj = dmarker
                 continue
