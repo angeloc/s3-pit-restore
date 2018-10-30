@@ -57,11 +57,14 @@ class TestS3PitRestore(unittest.TestCase):
             file_path = os.path.join(folder_path, "file%d" % i)
 
             in_content=""
-            with open(file_path, 'r') as infile:
-                in_content = infile.read()
-                print(file_path, content, "==", in_content)
-                if in_content != content:
-                    return False
+            try:
+               with open(file_path, 'r') as infile:
+                  in_content = infile.read()
+                  print(file_path, content, "==", in_content)
+                  if in_content != content:
+                      return False
+            except:
+               return False
         return True
 
     def upload_directory(self, resource, path, bucketname):
@@ -72,13 +75,20 @@ class TestS3PitRestore(unittest.TestCase):
                     local_path = os.path.join(root, f)
                     relative_path = os.path.relpath(local_path, path)
                     s3_path = os.path.join(base_path, relative_path)
-                    e.submit(resource.meta.client.upload_file, os.path.join(root,f), bucketname, s3_path)
+                    e.submit(resource.meta.client.upload_file, local_path, bucketname, s3_path)
 
-    def test_restore(self):
-        contents_before = [ str(uuid.uuid4()) for n in range(2048) ]
-        contents_after =  [ str(uuid.uuid4()) for n in range(2048) ]
-        path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-restore")
-        s3 = boto3.resource('s3')
+    def delete_directory(self, resource, path):
+        base_path = os.path.basename(os.path.normpath(path))
+        objects_to_delete = resource.meta.client.list_objects(Bucket=args.bucket, Prefix=base_path)
+        delete_keys = {'Objects' : []}
+        delete_keys['Objects'] = [{'Key' : k} for k in [obj['Key'] for obj in objects_to_delete.get('Contents', [])]]
+        resource.meta.client.delete_objects(Bucket=args.bucket, Delete=delete_keys)
+
+    def remove_tree(self, path):
+        if os.path.exists(path) and os.path.isdir(path):
+            shutil.rmtree(path)
+
+    def check_versioning(self, s3):
         bucket_versioning = s3.BucketVersioning(args.bucket)
         bucket_versioning.load()
 
@@ -86,20 +96,27 @@ class TestS3PitRestore(unittest.TestCase):
         self.assertNotEqual(bucket_versioning.status, None)
         print("enabled!")
 
+    def test_restore(self):
+        contents_before = [ str(uuid.uuid4()) for n in range(2048) ]
+        contents_after =  [ str(uuid.uuid4()) for n in range(2048) ]
+        path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-restore")
+        s3 = boto3.resource('s3')
+        self.check_versioning(s3)
+
         print("Before ...")
-        shutil.rmtree(path)
+        self.remove_tree(path)
         time_before = datetime.now(timezone.utc)
         time.sleep(1)
         self.generate_tree(path, contents_before)
         self.upload_directory(s3, path, args.bucket)
-        shutil.rmtree(path)
+        self.remove_tree(path)
 
         print("Upload and owerwriting ...")
         time.sleep(1)
         time_after = datetime.now(timezone.utc)
         self.generate_tree(path, contents_after)
         self.upload_directory(s3, path, args.bucket)
-        shutil.rmtree(path)
+        self.remove_tree(path)
 
         args.from_timestamp = str(time_before)
         args.timestamp = str(time_after)
@@ -107,6 +124,30 @@ class TestS3PitRestore(unittest.TestCase):
         do_restore()
         print("Restoring and checking ...")
         self.assertTrue(self.check_tree(path, contents_before))
+
+    def test_dmarker_restore(self):
+        content = [ str(uuid.uuid4()) for n in range(1) ]
+        path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-dmarker-restore")
+        s3 = boto3.resource('s3')
+        self.check_versioning(s3)
+
+        print("Before starting dmarker_restore test...")
+        self.remove_tree(path)
+
+        self.generate_tree(path, content)
+        self.upload_directory(s3, path, args.bucket)
+        self.remove_tree(path)
+
+        time.sleep(1)
+        time_before = datetime.now(timezone.utc)
+
+        print("deleting ...")
+        self.delete_directory(s3, path)
+        args.timestamp = str(time_before)
+        args.prefix = os.path.basename(os.path.normpath(path))
+        do_restore()
+        print("Restoring and checking for dmarker_restore test")
+        self.assertTrue(self.check_tree(path, content))
 
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
@@ -215,7 +256,8 @@ def do_restore():
             while deletemarkers and (dmarker["Key"] < obj["Key"] or dmarker["LastModified"] > pit_end_date):
                 dmarker = deletemarkers.pop(0)
 
-            if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"]:
+            #skip dmarker if it's latest than pit_end_date
+            if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"] and dmarker["LastModified"] <= pit_end_date:
                 # The most recent operation on this key was a delete
                 last_obj = dmarker
                 continue
