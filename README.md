@@ -97,6 +97,16 @@ optional arguments:
                         max number of concurrent download requests
 ```
 
+## Docker Usage
+
+```bash
+# make a new local dir in your current path
+mkdir restore
+
+# restore a point in time copy under the restore dir you just created
+docker run -ti --rm --name=s3pit -v {$PWD}/restore:/tmp -e AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID] -e AWS_SECRET_ACCESS_KEY=[AWS_ACCESS_KEY_ID] avatarnewyork/s3-pit-restore:latest s3-pit-restore -b [Bucket] -p [Prefix] -d /tmp -t "01-25-2018 10:59:50 +2"
+```
+
 ## Testing
 
 s3-pit-restore comes with a testing suite. You can run it with:
