@@ -20,7 +20,7 @@ with a simple command like:
 
 Choosing the correct time and date to restore at is simply a matter of getting
 that information clicking the *Versions: Show* button from the S3 web gui
-and navigating through the, now appeared, versions timestamps. 
+and navigating through the, now appeared, versions timestamps.
 
 ## Installing
 
@@ -104,7 +104,7 @@ optional arguments:
 mkdir restore
 
 # restore a point in time copy under the restore dir you just created
-docker run -ti --rm --name=s3pit -v {$PWD}/restore:/tmp -e AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID] -e AWS_SECRET_ACCESS_KEY=[AWS_ACCESS_KEY_ID] avatarnewyork/s3-pit-restore:latest s3-pit-restore -b [Bucket] -p [Prefix] -d /tmp -t "01-25-2018 10:59:50 +2"
+docker run -ti --rm --name=s3-pit-restore -v {$PWD}/restore:/tmp -e AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID] -e AWS_SECRET_ACCESS_KEY=[AWS_ACCESS_KEY_ID] angelocompagnucci/s3-pit-restore:latest s3-pit-restore -b [Bucket] -p [Prefix] -d /tmp -t "01-25-2018 10:59:50 +2"
 ```
 
 ## Testing
