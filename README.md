@@ -13,10 +13,14 @@ gui doesn't offer a simple way to do that on a massive scale.
 With this tool you can easily restore a repository to a point in time
 with a simple command like:
 
-	* To local file-system:-
-		`$ s3-pit-restore -b my-bucket -d restored-bucket-local -t "06-17-2016 23:59:50 +2"`
-	* To s3 bucket:-
-		`$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -t "06-17-2016 23:59:50 +2"`
+* To local file-system:
+	```
+	$ s3-pit-restore -b my-bucket -d restored-bucket-local -t "06-17-2016 23:59:50 +2"
+	```
+* To s3 bucket:-
+	```
+	$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -t "06-17-2016 23:59:50 +2"
+	```
 
 Choosing the correct time and date to restore at is simply a matter of getting
 that information clicking the *Versions: Show* button from the S3 web gui
@@ -38,32 +42,44 @@ or clone the repository and launch:
 
 ### Restore to local file-system
 
-	* Restore to local file-system directory `restored-bucket-local`
-		`$ s3-pit-restore -b my-bucket -d restored-bucket-local -t "06-17-2016 23:59:50 +2"`
+* Restore to local file-system directory `restored-bucket-local`
+	```
+	$ s3-pit-restore -b my-bucket -d restored-bucket-local -t "06-17-2016 23:59:50 +2"
+	```
 
 ### Restore to s3 bucket
 
-	* Restore to same bucket:-
-		`$ s3-pit-restore -b my-bucket -B my-bucket -t "06-17-2016 23:59:50 +2"`
+* Restore to same bucket:
+	```
+	$ s3-pit-restore -b my-bucket -B my-bucket -t "06-17-2016 23:59:50 +2"
+	```
 
-	* Restore to different bucket:-
-		`$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -t "06-17-2016 23:59:50 +2"`
+* Restore to different bucket:-
+	```
+	$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -t "06-17-2016 23:59:50 +2"
+	```
 
-	* Restore to s3 bucket with custom virtual prefix [restored object(src_obj) will have key as `new-restored-path/src_obj["Key"]`]
-		`$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -P new-restored-path -t "06-17-2016 23:59:50 +2"`
+* Restore to s3 bucket with custom virtual prefix [restored object(src_obj) will have key as `new-restored-path/src_obj["Key"]`]
+	```
+	$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -P new-restored-path -t "06-17-2016 23:59:50 +2"
+	```
 
 ### Other common options for both the cases
 
-(explained using `Restore to local file-system` case)
+* Another thing it can do is to restore a subfolder (*prefix*) of a bucket:
+	```
+	$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2"
+	```
 
-	* Another thing it can do is to restore a subfolder (*prefix*) of a bucket:
-		`$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2"`
+* You can also speedup the download if you have bandwidth using more parallel workers:
+	```
+	$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2" --max-workers 100
+	```
 
-	* You can also speedup the download if you have bandwidth using more parallel workers:
-		`$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2" --max-workers 100`
-
-	* If want to restore a well defined time span, you can use a starting and ending timestamp (a month in this example):
-		`$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -f "05-01-2016 00:00:00 +2" -t "06-01-2016 00:00:00 +2"`
+* If want to restore a well defined time span, you can use a starting and ending timestamp (a month in this example):
+	```
+	$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -f "05-01-2016 00:00:00 +2" -t "06-01-2016 00:00:00 +2"
+	```
 
 ## Command line options
 
