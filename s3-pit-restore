@@ -259,7 +259,7 @@ def s3_copy_object(obj):
         'Key': obj["Key"],
         'VersionId': obj["VersionId"]
     }
-    client.copy_object(Bucket=args.dest_bucket, CopySource=copy_source, Key=get_key(obj))
+    client.copy(Bucket=args.dest_bucket, CopySource=copy_source, Key=get_key(obj))
 
 def handled_by_delete(obj):
     if args.dry_run:
