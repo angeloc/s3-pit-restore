@@ -298,12 +298,19 @@ def do_restore():
     paginator = client.get_paginator('list_object_versions')
     obj_needs_be_deleted = {}
     page_iterator = paginator.paginate(Bucket=args.bucket, Prefix=args.prefix)
+    # Delete markers can get desynchronized with the versions markers in the pagination system below.
+    # To avoid this, we will push from page to page the desynchronized markers until they fall on the
+    # page they should (the one with the versioning markers for the same set of files)
+    previous_deletemarkers = []
     for page in page_iterator:
         if not "Versions" in page:
             print("No versions matching criteria, exiting ...", file=sys.stderr)
             sys.exit(1)
         versions = page["Versions"]
-        deletemarkers = page.get("DeleteMarkers", [])
+        # Some deletemarkers may come from the previous page: add them now
+        deletemarkers = previous_deletemarkers + page.get("DeleteMarkers", [])
+        # And since they have been added, we remove them from the overflow list
+        previous_deletemarkers = []
         dmarker = {"Key":""}
         for obj in versions:
             if last_obj["Key"] == obj["Key"]:
@@ -317,7 +324,9 @@ def do_restore():
                     obj_needs_be_deleted[obj["Key"]] = obj
                 continue
 
-            while deletemarkers and (dmarker["Key"] < obj["Key"] or dmarker["LastModified"] > pit_end_date):
+            # Dont go farther in the deletemarkers list than the current key, or else we risk consuming desync delete markers of the next page
+            # (both versions and deletemarkers list are sorted in alphabetical order of the key, and then in reverse time order for each key)
+            while deletemarkers and (dmarker["Key"] < obj["Key"] or (dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > pit_end_date)):
                 dmarker = deletemarkers.pop(0)
 
             #skip dmarker if it's latest than pit_end_date
@@ -339,6 +348,12 @@ def do_restore():
 
             if not handled_by_standard(obj):
                 return
+
+        # The last dmarker may belong to the next version (if dmarker["Key"] != obj["Key"] ), keep it
+        previous_deletemarkers.append(dmarker)
+        # And all following may too, if any, so add them now.
+        while deletemarkers:
+            previous_deletemarkers.append(deletemarkers.pop(0))
 
         for future in concurrent.futures.as_completed(futures):
             if future in futures:
