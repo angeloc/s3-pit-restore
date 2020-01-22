@@ -14,9 +14,6 @@ LABEL org.label-schema.build-date=${BUILD_DATE} \
           org.label-schema.version=${VERSION} \
           org.label-schema.schema-version="v0.9"
 
-ENV AWS_ACCESS_KEY_ID="" \
-    AWS_SECRET_ACCESS_KEY=""
-
 RUN pip3 --no-cache-dir install s3-pit-restore awscli
 
 ENTRYPOINT [ "s3-pit-restore" ]
