@@ -190,7 +190,7 @@ def print_obj(obj, optional_message=""):
         print(obj["Key"])
 
 def handled_by_glacier(obj):
-    if (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER")  and not args.enable_glacier:
+    if (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and not args.enable_glacier:
         print_obj(obj)
         return True
     elif (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and args.enable_glacier:
