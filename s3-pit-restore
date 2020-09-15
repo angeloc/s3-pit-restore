@@ -190,10 +190,10 @@ def print_obj(obj, optional_message=""):
         print(obj["Key"])
 
 def handled_by_glacier(obj):
-    if obj["StorageClass"] == "GLACIER" and not args.enable_glacier:
+    if (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER")  and not args.enable_glacier:
         print_obj(obj)
         return True
-    elif obj["StorageClass"] == "GLACIER" and args.enable_glacier:
+    elif (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and args.enable_glacier:
         s3 = boto3.resource('s3')
         s3_obj = s3.Object(args.bucket, obj["Key"])
         if s3_obj.restore is None:
