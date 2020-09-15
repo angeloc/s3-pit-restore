@@ -191,7 +191,7 @@ def print_obj(obj, optional_message=""):
 
 def handled_by_glacier(obj):
     if (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and not args.enable_glacier:
-        print_obj(obj)
+        print_obj(obj, optional_message='needs restore')
         return True
     elif (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and args.enable_glacier:
         s3 = boto3.resource('s3')
