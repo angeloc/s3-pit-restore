@@ -184,10 +184,11 @@ def signal_handler(signal, frame):
     print("Gracefully exiting ...")
 
 def print_obj(obj, optional_message=""):
-    if args.verbose:
-        print('"%s" %s %s %s %s %s' % (obj["LastModified"], obj["VersionId"], obj["Size"], obj["StorageClass"], obj["Key"], optional_message))
-    else:
-        print(obj["Key"])
+    print("")
+    #if args.verbose:
+        #print('"%s" %s %s %s %s %s' % (obj["LastModified"], obj["VersionId"], obj["Size"], obj["StorageClass"], obj["Key"], optional_message))
+    #else:
+        #print(obj["Key"])
 
 def handled_by_glacier(obj):
     if obj["StorageClass"] == "GLACIER" and not args.enable_glacier:
@@ -229,6 +230,7 @@ def handled_by_standard(obj):
             global futures
             futures[future] = obj
         else:
+            print("Handling via standard")
             print_obj(obj)
     except RuntimeError:
         return False
@@ -236,6 +238,8 @@ def handled_by_standard(obj):
 
 def handled_by_copy(obj):
     if args.dry_run:
+        #print("handling via copy")
+        is_correct_version(obj)
         print_obj(obj)
         return True
     future = executor.submit(s3_copy_object, obj)
@@ -252,6 +256,15 @@ def get_key(obj):
     if not args.dest_prefix:
         return  obj["Key"]
     return os.path.join(args.dest_prefix, obj["Key"])
+
+def is_correct_version(obj):
+    print(obj["Key"])
+    print('What I was handed %s' % (obj["VersionId"]))
+    source_etag = obj["VersionId"]
+    response = client.head_object(Bucket=args.dest_bucket, Key=obj["Key"])
+    print('What is currently there : %s' % (response["VersionId"]))
+    destination_etag = response["VersionId"]
+    print("Has changed? %s" % (source_etag != destination_etag))
 
 def s3_copy_object(obj):
     copy_source= {
