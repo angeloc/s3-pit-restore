@@ -218,22 +218,22 @@ def handled_by_glacier(obj):
         return False
 
 def handled_by_standard(obj):
-    if obj["Key"].endswith("/"):
-        if not os.path.exists(obj["Key"]):
-            os.makedirs(obj["Key"])
-        return True
-    key_path = os.path.dirname(obj["Key"])
-    if key_path and not os.path.exists(key_path):
-            os.makedirs(key_path)
-    try:
-        if not args.dry_run:
+    if args.dry_run:
+        print_obj(obj)
+    else:
+        if obj["Key"].endswith("/"):
+            if not os.path.exists(obj["Key"]):
+                os.makedirs(obj["Key"])
+            return True
+        key_path = os.path.dirname(obj["Key"])
+        if key_path and not os.path.exists(key_path):
+                os.makedirs(key_path)
+        try:
             future = executor.submit(download_file, obj)
             global futures
             futures[future] = obj
-        else:
-            print_obj(obj)
-    except RuntimeError:
-        return False
+        except RuntimeError:
+            return False
     return True
 
 def handled_by_copy(obj):
@@ -292,7 +292,7 @@ def do_restore():
     executor = concurrent.futures.ThreadPoolExecutor(args.max_workers)
 
     # Only create directories when s3 destination bucket option is missing
-    if args.dest_bucket is None:
+    if args.dest_bucket is None and not args.dry_run:
         if not os.path.exists(dest):
             os.makedirs(dest)
         os.chdir(dest)
