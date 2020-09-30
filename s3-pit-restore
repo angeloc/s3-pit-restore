@@ -236,7 +236,7 @@ def handled_by_standard(obj):
     return True
 
 def handled_by_copy(obj):
-    if not needs_copy(obj):
+    if args.avoid_duplicates and not needs_copy(obj):
         return True
     if args.dry_run:        
         print_obj(obj)
@@ -411,6 +411,7 @@ if __name__=='__main__':
     parser.add_argument('--debug', help='enable debug output', action='store_true')
     parser.add_argument('--test', help='s3 pit restore testing', action='store_true')
     parser.add_argument('--max-workers', help='max number of concurrent download requests', default=10, type=int)
+    parser.add_argument('--avoid-duplicates', help='avoids copying files if the latest version is the version that matches timestamp requested', action='store_true')
     args = parser.parse_args()
 
     if args.dest_bucket is None and not args.dest:
