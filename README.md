@@ -88,6 +88,7 @@ usage: s3-pit-restore [-h] -b BUCKET [-B DEST_BUCKET] [-d DEST]
                       [-P DEST_PREFIX] [-p PREFIX] [-t TIMESTAMP]
                       [-f FROM_TIMESTAMP] [-e] [-v] [--dry-run] [--debug]
                       [--test] [--max-workers MAX_WORKERS]
+                      [--sse {AES256,aws:kms}]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -111,6 +112,8 @@ optional arguments:
   --test                s3 pit restore testing
   --max-workers MAX_WORKERS
                         max number of concurrent download requests
+  --sse ALGORITHM
+                        specify what SSE algorithm you would like to use for the copy
 ```
 
 ## Docker Usage

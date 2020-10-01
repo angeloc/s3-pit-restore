@@ -259,7 +259,13 @@ def s3_copy_object(obj):
         'Key': obj["Key"],
         'VersionId': obj["VersionId"]
     }
-    client.copy(Bucket=args.dest_bucket, CopySource=copy_source, Key=get_key(obj))
+
+    extra_args = { }
+
+    if args.sse is not None:
+        extra_args['ServerSideEncryption'] = args.sse
+
+    client.copy(Bucket=args.dest_bucket, CopySource=copy_source, Key=get_key(obj), ExtraArgs=extra_args)
 
 def handled_by_delete(obj):
     if args.dry_run:
@@ -393,6 +399,7 @@ if __name__=='__main__':
     parser.add_argument('--debug', help='enable debug output', action='store_true')
     parser.add_argument('--test', help='s3 pit restore testing', action='store_true')
     parser.add_argument('--max-workers', help='max number of concurrent download requests', default=10, type=int)
+    parser.add_argument('--sse', choices=['AES256', 'aws:kms'], help='Specify server-side encryption')
     args = parser.parse_args()
 
     if args.dest_bucket is None and not args.dest:
