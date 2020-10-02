@@ -88,6 +88,7 @@ usage: s3-pit-restore [-h] -b BUCKET [-B DEST_BUCKET] [-d DEST]
                       [-P DEST_PREFIX] [-p PREFIX] [-t TIMESTAMP]
                       [-f FROM_TIMESTAMP] [-e] [-v] [--dry-run] [--debug]
                       [--test] [--max-workers MAX_WORKERS]
+					  [--avoid-duplicates]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -111,6 +112,7 @@ optional arguments:
   --test                s3 pit restore testing
   --max-workers MAX_WORKERS
                         max number of concurrent download requests
+  --avoid-duplicates	tries to avoid sopying files that are already at the latest version
 ```
 
 ## Docker Usage
