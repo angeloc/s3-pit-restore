@@ -36,6 +36,18 @@ or clone the repository and launch:
 
 `$ python3 setup.py install`
 
+## Requirements
+
+  * Python 3
+  * AWS credentials available in the environment
+	* This can be accomplished in various ways:
+		* Environment Variables:
+			* AWS_ACCESS_KEY_ID
+			* AWS_SECRET_ACCESS_KEY
+			* AWS_DEFAULT_REGION
+		* Your `~/.aws/ files`
+			* Configured with `aws configure`
+
 ## Usage
 
 `s3-pit-restore` can do a lot of interesting things. The base one is restoring an entire bucket to a previous state:
@@ -46,6 +58,9 @@ or clone the repository and launch:
 	```
 	$ s3-pit-restore -b my-bucket -d restored-bucket-local -t "06-17-2016 23:59:50 +2"
 	```
+	* `-b` gives the source bucket name to be restored from
+	* `-d` gives the local folder to restore to (if it doesn't exist it will be created)
+	* `-t` gives the target date to restore to. Note: The timestamp must include the timezone offset. 
 
 ### Restore to s3 bucket
 
@@ -53,13 +68,14 @@ or clone the repository and launch:
 	```
 	$ s3-pit-restore -b my-bucket -B my-bucket -t "06-17-2016 23:59:50 +2"
 	```
+	* `-B` gives the destination bucket to restore to. Note: Use the same bucket name to restore back to the source bucket.
 
 * Restore to different bucket:-
 	```
 	$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -t "06-17-2016 23:59:50 +2"
 	```
 
-* Restore to s3 bucket with custom virtual prefix [restored object(src_obj) will have key as `new-restored-path/src_obj["Key"]`]
+* Restore to s3 bucket with custom virtual prefix [restored object(src_obj) will have key as `new-restored-path/src_obj["Key"]`] (Using `-P` flag)
 	```
 	$ s3-pit-restore -b my-bucket -B restored-bucket-s3 -P new-restored-path -t "06-17-2016 23:59:50 +2"
 	```
@@ -70,13 +86,14 @@ or clone the repository and launch:
 	```
 	$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2"
 	```
+	* `-p` gives a prefix to isolate when checking the _source_ bucket (`-P` is used when deal with the _destination_ bucket/folder)
 
-* You can also speedup the download if you have bandwidth using more parallel workers:
+* You can also speedup the download if you have bandwidth using more parallel workers (`--max-workers` flag):
 	```
 	$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -t "06-17-2016 23:59:50 +2" --max-workers 100
 	```
 
-* If want to restore a well defined time span, you can use a starting and ending timestamp (a month in this example):
+* If want to restore a well defined time span, you can use a starting (`-f`) and ending (`-t`) timestamp (a month in this example):
 	```
 	$ s3-pit-restore -b my-bucket -d my-restored-subfolder -p mysubfolder -f "05-01-2016 00:00:00 +2" -t "06-01-2016 00:00:00 +2"
 	```
