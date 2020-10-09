@@ -270,7 +270,6 @@ def get_key(obj):
         return  obj["Key"]
     return os.path.join(args.dest_prefix, obj["Key"])
 
-
 def s3_copy_object(obj):
     copy_source= {
         'Bucket': args.bucket,

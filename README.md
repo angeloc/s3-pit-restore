@@ -112,7 +112,7 @@ optional arguments:
   --test                s3 pit restore testing
   --max-workers MAX_WORKERS
                         max number of concurrent download requests
-  --avoid-duplicates    tries to avoid sopying files that are already at the latest version
+  --avoid-duplicates    tries to avoid copying files that are already at the latest version
 ```
 
 ## Docker Usage
