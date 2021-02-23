@@ -58,7 +58,8 @@ class TestS3PitRestore(unittest.TestCase):
         if args.dest_prefix:
             base_path = os.path.join(args.dest_prefix, base_path)
 
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
+
         paginator = s3.meta.client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(Bucket=args.dest_bucket, Prefix=base_path)
         with concurrent.futures.ThreadPoolExecutor(args.max_workers) as e:
@@ -126,7 +127,7 @@ class TestS3PitRestore(unittest.TestCase):
         contents_before = [ str(uuid.uuid4()) for n in range(2048) ]
         contents_after =  [ str(uuid.uuid4()) for n in range(2048) ]
         path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-restore")
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
         self.check_versioning(s3)
 
         print("Before ...")
@@ -156,7 +157,7 @@ class TestS3PitRestore(unittest.TestCase):
     def test_dmarker_restore(self):
         content = [ str(uuid.uuid4()) for n in range(1) ]
         path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-dmarker-restore")
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
         self.check_versioning(s3)
 
         print("Before starting dmarker_restore test...")
@@ -196,7 +197,7 @@ def handled_by_glacier(obj):
         print_obj(obj, optional_message='needs restore')
         return True
     elif (obj["StorageClass"] == "DEEP_ARCHIVE" or obj["StorageClass"] == "GLACIER") and args.enable_glacier:
-        s3 = boto3.resource('s3')
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
         s3_obj = s3.Object(args.bucket, obj["Key"])
         if s3_obj.restore is None:
             print_obj(obj, optional_message='requesting')
@@ -285,7 +286,8 @@ def do_restore():
     pit_start_date = (parse(args.from_timestamp) if args.from_timestamp else datetime.fromtimestamp(0, timezone.utc))
     pit_end_date = (parse(args.timestamp) if args.timestamp else datetime.now(timezone.utc))
     global client
-    client = boto3.client('s3')
+    client = boto3.client('s3', endpoint_url=args.endpoint_url)
+
     global transfer
     transfer = boto3.s3.transfer.S3Transfer(client)
     dest = args.dest
@@ -397,6 +399,7 @@ if __name__=='__main__':
     parser.add_argument('-f', '--from-timestamp', help='starting point in time to restore from')
     parser.add_argument('-e', '--enable-glacier', help='enable recovering from glacier', action='store_true')
     parser.add_argument('-v', '--verbose', help='print verbose informations from s3 objects', action='store_true')
+    parser.add_argument('-u', '--endpoint-url', help='use another endpoint URL for s3 service')
     parser.add_argument('--dry-run', help='execute query without transferring files', action='store_true')
     parser.add_argument('--debug', help='enable debug output', action='store_true')
     parser.add_argument('--test', help='s3 pit restore testing', action='store_true')
