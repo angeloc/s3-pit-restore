@@ -28,6 +28,7 @@ $ python script.js
 
 ## Data for input.json
 We need to provide values in `input.json`.
+
 ![input-data](https://user-images.githubusercontent.com/86454870/147052865-32f7bd10-1db9-41e1-8994-c87838407357.png)
 
 - dryRun 
