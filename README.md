@@ -1,6 +1,6 @@
 # Script for S3 Restore
 This script restores several AWS-S3 folders at once using the S3-pit-restore library.
-For refrence, here is the official doc of [s3-pit-restore](https://github.com/angeloc/s3-pit-restore).
+For refrence, here is the official documentation of [s3-pit-restore](./script_README.md).
 
 We must give data in the `input.json` file, that will be used by the script.
 You can run the script by simply running this command:
