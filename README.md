@@ -48,12 +48,11 @@ We need to provide values in `input.json`.
 
 ```
 {
-	"dryRun": true,
-	"bucket": "ms-bucket",
-	"timestamp": "12-22-2021 11:55:54 +5:30",
+	"dryRun": false,
+	"bucket": "ms-versioning-bucket",
+	"timestamp": "12-23-2021 15:25:00 +5:30",
 	"items": [
-		 "folder1",
-		 "folder2/data.txt"
+		 "level1/level2-1/"
 	]
 }
 ```
@@ -66,7 +65,7 @@ We need to provide values in `input.json`.
 
 - timestamp - The date and time at which the folder will be restored. The timestamp format is **MM-DD-YYYY HH:MM:SS +UTC**. Note: The timestamp must include the timezone offset.
 
-- items - list the folders which will be restored.
+- items - list the folders which will be restored. Multiple folders/files can be passed
 
 ## Output 
 The output is logged in console in the format 
@@ -79,4 +78,4 @@ The output is logged in console in the format
 * storage class - The storage class of bucket.
 * file name - The restored or deleted file/folder.
 
-![with verbose](https://user-images.githubusercontent.com/86454870/147057112-778b5ecd-0dff-4182-973c-73d5079f12c7.png)
+![Script output](https://i.ibb.co/zN8c7SK/image.png)

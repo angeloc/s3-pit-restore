@@ -1,9 +1,8 @@
 {
-	"dryRun": true,
+	"dryRun": false,
 	"bucket": "ms-versioning-bucket",
-	"timestamp": "12-22-2021 11:55:54 +5:30",
+	"timestamp": "12-23-2021 15:25:00 +5:30",
 	"items": [
-		 "folder1",
-		 "folder4/a.txt"
+		 "level1/level2-1/"
 	]
 }
