@@ -9,7 +9,7 @@ $ python script.js
 ```
 - - -
 
-## Requirements
+## Prerequisitex
 
   * Python 3
   * AWS credentials available in the environment
