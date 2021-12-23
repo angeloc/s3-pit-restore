@@ -9,6 +9,18 @@ $ python script.js
 ```
 - - -
 
+## Requirements
+
+  * Python 3
+  * AWS credentials available in the environment
+	* This can be accomplished in various ways:
+		* Environment Variables:
+			* AWS_ACCESS_KEY_ID
+			* AWS_SECRET_ACCESS_KEY
+			* AWS_DEFAULT_REGION
+		* Your `~/.aws/ files`
+			* Configured with `aws configure`
+
 ## Installing
 - clone the repository
 ```bash
@@ -20,6 +32,11 @@ $ git clone https://github.com/yashijain1998/s3-pit-restore.git
 $ cd s3-pit-restore
 ```
 
+- Install s3-pit-restore dependency
+```bash
+$ pip3 install s3-pit-restore
+``` 
+
 - Run the script:
 ```bash
 $ python script.js
@@ -29,11 +46,21 @@ $ python script.js
 ## Data for input.json
 We need to provide values in `input.json`.
 
-![input-data](https://user-images.githubusercontent.com/86454870/147052865-32f7bd10-1db9-41e1-8994-c87838407357.png)
+```
+{
+	"dryRun": true,
+	"bucket": "ms-bucket",
+	"timestamp": "12-22-2021 11:55:54 +5:30",
+	"items": [
+		 "folder1",
+		 "folder2/data.txt"
+	]
+}
+```
 
 - dryRun 
-  - If true, it will display a list of files that will be restored but will not perform any actual operations in AWS S3.
-  - If false, it will restore the folders in AWS S3 according to the timestamp.
+  - If true, it will display a list of file/folder that will be restored but will not perform any actual operations in AWS S3.
+  - If false, it will restore the file/folder in AWS S3 according to the timestamp.
 
 - bucket - The name of the AWS S3 bucket in which the restore operation will be performed.
 
@@ -42,13 +69,14 @@ We need to provide values in `input.json`.
 - items - list the folders which will be restored.
 
 ## Output 
-When -v [verbose] param is passed, the output is logged in console in the format 
+The output is logged in console in the format 
 
-[timestamp] [versionId] [size] [storage class] [file name]
+[creation timestamp] [versionId] [size] [storage class] [file name]
+
+* creation timestamp - The time when the version of the file/folder was created.
+* versionId - The version Id of the restored file/folder.
+* size - The file/folder folder's size.
+* storage class - The storage class of bucket.
+* file name - The restored or deleted file/folder.
 
 ![with verbose](https://user-images.githubusercontent.com/86454870/147057112-778b5ecd-0dff-4182-973c-73d5079f12c7.png)
-
-Without verbose, the output is only the *file name* that is restored.
-
-![without verbose](https://user-images.githubusercontent.com/86454870/147058015-20997348-abcb-47fd-996e-43c4bb1ee13a.png)
-
