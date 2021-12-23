@@ -1,5 +1,5 @@
 {
-	"dryRun": false,
+	"dryRun": true,
 	"bucket": "ms-versioning-bucket",
 	"timestamp": "12-23-2021 15:25:00 +5:30",
 	"items": [
