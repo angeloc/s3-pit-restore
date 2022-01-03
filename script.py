@@ -23,16 +23,18 @@ data = json.load(file)
 dryRun = data["dryRun"]
 bucket = data["bucket"]
 timestamp = data["timestamp"]
+skipDeletion = data["skipDeletion"]
 items = data["items"]
 
 # Display the config parameters
 outputStr = '''
         Input Parameters
         ------------------------------
-        Dry Run:     {dryRun}
-        Bucket:      {bucket}
-        Timestamp:   {timestamp}
-        Items:       {items}
+        Dry Run:       {dryRun}
+        Skip Deletion: {skipDeletion}
+        Bucket:        {bucket}
+        Timestamp:     {timestamp}
+        Items:         {items}
     '''
 print(outputStr.format(**locals()))
 
@@ -41,14 +43,19 @@ input = ask_yesno("Continue ? (y/n)")
 
 if input is True: 
     print("user consent. Starting")
+    scriptcmd = f'python s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates'
     
-    # Process the records
+    #Process the records
     for index, item in enumerate(items, start=1):
+        itemcmd = f'{scriptcmd} -p {item}'
+        optioncmd = itemcmd
         print("------------------------------------------------")
-        print("Processing {} of {} , path = {} ".format(index, len(items), item))
+        print(f"Processing {index} of {len(items)} , path = {item}")
+        if skipDeletion:
+            optioncmd = f'{optioncmd} --skip-deletion'
         if dryRun:
-            subprocess.call(f' python s3-pit-restore -b {bucket} -B {bucket} -p {item} -t "{timestamp}" -v --dry-run', shell=True)
-        else:
-            subprocess.call(f' python s3-pit-restore -b {bucket} -B {bucket} -p {item} -t "{timestamp}" -v', shell=True)
+            optioncmd = f'{optioncmd} -v --dry-run'
+            
+        subprocess.call(optioncmd, shell=True)
 else:
     print("user denied, Exiting")

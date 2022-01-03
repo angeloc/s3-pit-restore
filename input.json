@@ -1,8 +1,9 @@
 {
 	"dryRun": true,
+	"skipDeletion": true,
 	"bucket": "ms-versioning-bucket",
-	"timestamp": "12-23-2021 15:25:00 +5:30",
+	"timestamp": "12-29-2021 15:30:00 +5:30",
 	"items": [
-		 "level1/level2-1/"
+		 "manpreet/"
 	]
 }
