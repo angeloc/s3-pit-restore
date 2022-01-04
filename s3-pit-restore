@@ -35,6 +35,7 @@ from datetime import datetime, timezone
 from dateutil.parser import parse
 from s3transfer.manager import TransferConfig
 from botocore.exceptions import ClientError
+from collections import defaultdict
 
 args = None
 executor = None
@@ -124,6 +125,36 @@ class TestS3PitRestore(unittest.TestCase):
         self.assertNotEqual(bucket_versioning.status, None)
         print("enabled!")
 
+    def get_versions(self, s3, path, dest):
+        bucket = s3.Bucket(dest)
+        base_path = os.path.basename(os.path.normpath(path))
+        resp = bucket.meta.client.list_object_versions(Bucket=dest, Prefix=base_path)
+
+        fileList = defaultdict(list)
+        for obj in [*resp['Versions']]:
+            if obj['Key'][-1] != '/':
+                fileList[obj['Key']].append(obj['VersionId'])
+        return fileList
+
+    def compare_versions(self, version_before, version_after):
+        for key in version_before.keys():
+            version_before_arr = version_before[key]
+            version_after_arr = version_after[key]
+            if (len(version_after_arr) == 1) and (version_after_arr[0] == version_before_arr[0]):
+                continue
+            elif len(version_after_arr) == 3:
+                continue
+            else:
+                return False
+        return True
+
+    def s3_clean_test_files(self, s3, path):
+        base_path = os.path.basename(os.path.normpath(path))
+        if args.dest_prefix:
+            base_path = os.path.join(args.dest_prefix, base_path)
+        bucket = s3.Bucket(args.bucket)
+        bucket.object_versions.filter(Prefix=base_path).delete()
+
     def test_restore(self):
         contents_before = [ str(uuid.uuid4()) for n in range(2048) ]
         contents_after =  [ str(uuid.uuid4()) for n in range(2048) ]
@@ -178,6 +209,52 @@ class TestS3PitRestore(unittest.TestCase):
         do_restore()
         print("Restoring and checking for dmarker_restore test")
         self.assertTrue(self.check_tree(path, content))
+
+    def test_avoid_duplicates(self):
+        if (args.bucket != args.dest_bucket):
+            print('test_avoid_duplicates is applicable when performing an inplace restore.')
+            return self.assertTrue(False)
+        contents_before = [ str(uuid.uuid4()) for n in range(2) ]
+        contents_after =  [ str(uuid.uuid4()) for n in range(1) ]
+        path = os.path.join(os.path.abspath(args.dest), "test-s3-pit-avoid-duplicates")
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
+        self.check_versioning(s3)
+
+        print("Before starting the avoid_duplicates test...")
+        self.remove_tree(path)
+
+        time.sleep(1)
+        time_before = datetime.now(timezone.utc)
+        time.sleep(1)
+        self.generate_tree(path, contents_before)
+        self.upload_directory(s3, path, args.bucket)
+        self.remove_tree(path)
+
+        print("Getting file versions for first upload.")
+        version_before = self.get_versions(s3, path, args.bucket)
+
+        print("Upload and overwriting...")
+        time.sleep(1)
+        time_after = datetime.now(timezone.utc)
+        time.sleep(1)
+        self.generate_tree(path, contents_after)
+        self.upload_directory(s3, path, args.bucket)
+        self.remove_tree(path)
+
+        args.from_timestamp = str(time_before)
+        args.timestamp = str(time_after)
+        args.avoid_duplicates = True
+        args.prefix = os.path.basename(os.path.normpath(path))
+        do_restore()
+        print("Restoring objects")
+        args.avoid_duplicates = False
+
+        print("Getting file versions for second upload.")
+        version_after = self.get_versions(s3, path, args.bucket)
+        print('Deleting test files uploaded to s3')
+        self.s3_clean_test_files(s3, path)
+        print('Comparing versions...')
+        self.assertTrue(self.compare_versions(version_before, version_after))
 
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
