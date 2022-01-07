@@ -201,18 +201,8 @@ def signal_handler(signal, frame):
     print("Gracefully exiting ...")
 
 def print_obj(obj, optional_message=""):
-    latestVersion = ""
-    restoreVersion = ""
-
-    if "changeType" in obj:
-        if obj["changeType"] == "modified": 
-            latestVersion = obj["latestVersion"]
-            restoreVersion = obj["VersionId"]
-        elif obj["changeType"] == "created": 
-            latestVersion = obj["VersionId"]
-
     if args.verbose:
-        logging.info('"%s" "%s" "%s" "%s" "%s" %s' % (obj["Key"], latestVersion, restoreVersion, obj["LastModified"], obj["changeType"], optional_message))
+        logging.info('"%s" "%s" "%s" "%s" %s' % (obj["Key"], obj["VersionId"], obj["LastModified"], obj["changeType"], optional_message))
     else:
         logging.info(obj["Key"])
 
@@ -274,7 +264,9 @@ def handled_by_copy(obj):
     return True
 
 def needs_copy(obj):
-    obj["latestVersion"] = ""
+    if args.bucket == args.dest_bucket:
+        return not obj["IsLatest"]
+    
     try:
         destination_object_data = client.head_object(Bucket=args.dest_bucket, Key=obj["Key"])
     except ClientError as error:
@@ -283,11 +275,7 @@ def needs_copy(obj):
         else:
             raise error
     # Won't work for files uploaded with different multipart chunk sizes
-    if args.bucket != args.dest_bucket:
-        return obj["ETag"] != destination_object_data["ETag"]
-    else:
-        obj["latestVersion"] = destination_object_data["VersionId"]
-        return obj["VersionId"] != destination_object_data["VersionId"]
+    return obj["ETag"] != destination_object_data["ETag"]
 
 def download_file(obj):
     transfer.download_file(args.bucket, obj["Key"], obj["Key"], extra_args={"VersionId": obj["VersionId"]})
