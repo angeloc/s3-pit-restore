@@ -430,7 +430,7 @@ if __name__=='__main__':
     parser.add_argument('--avoid-duplicates', help='avoids copying files if the latest version is the version that matches timestamp requested', action='store_true')
     parser.add_argument('--skip-deletion', help='skip deletion of files created after the timestamp', action='store_true')
     parser.add_argument('--sse', choices=['AES256', 'aws:kms'], help='Specify server-side encryption')
-    parser.add_argument('--logFileName',help='name of log folder')
+    parser.add_argument('--logFileName',help='name of log file')
     args = parser.parse_args()
     
     # setup logging
