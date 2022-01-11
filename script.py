@@ -1,4 +1,5 @@
 import subprocess, json
+from datetime import datetime
 
 # Function to ask user confirmation
 def ask_yesno(question):
@@ -25,6 +26,7 @@ bucket = data["bucket"]
 timestamp = data["timestamp"]
 skipDeletion = data["skipDeletion"]
 items = data["items"]
+logFileName = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
 
 # Display the config parameters
 outputStr = '''
@@ -43,7 +45,7 @@ input = ask_yesno("Continue ? (y/n)")
 
 if input is True: 
     print("user consent. Starting")
-    scriptcmd = f'python s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates'
+    scriptcmd = f'python s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates --logFileName "{logFileName}"'
     
     #Process the records
     for index, item in enumerate(items, start=1):
