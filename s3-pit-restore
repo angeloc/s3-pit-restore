@@ -42,19 +42,6 @@ transfer = None
 futures = {}
 client = None
 
-# setup logging
-timeStamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
-logfile = "logs/" + timeStamp + ".log"
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(message)s',
-    handlers=[
-        logging.FileHandler(logfile),
-        logging.StreamHandler()
-    ]
-)
-
 class TestS3PitRestore(unittest.TestCase):
 
     def generate_tree(self, path, contents):
@@ -443,7 +430,23 @@ if __name__=='__main__':
     parser.add_argument('--avoid-duplicates', help='avoids copying files if the latest version is the version that matches timestamp requested', action='store_true')
     parser.add_argument('--skip-deletion', help='skip deletion of files created after the timestamp', action='store_true')
     parser.add_argument('--sse', choices=['AES256', 'aws:kms'], help='Specify server-side encryption')
+    parser.add_argument('--logFileName',help='name of log file')
     args = parser.parse_args()
+    
+    # setup logging
+    logfileName = args.logFileName
+    if not logfileName:
+        logfileName = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+        
+    logfile = "logs/" + logfileName +".log"
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s %(levelname)s %(message)s',
+        handlers=[
+            logging.FileHandler(logfile),
+            logging.StreamHandler()
+        ]
+    )
 
     if args.dest_bucket is None and not args.dest:
         parser.error("Either provide destination bucket using (-B ) or provide destination for local restore (-d)")
