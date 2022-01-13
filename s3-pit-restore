@@ -30,7 +30,7 @@
 # SOFTWARE.
 
 import os, sys, time, signal, argparse, boto3, botocore, \
-        unittest, concurrent.futures, shutil, uuid, time, logging
+        unittest, concurrent.futures, shutil, uuid, time, logging, csv, io, shlex
 from datetime import datetime, timezone
 from dateutil.parser import parse
 from s3transfer.manager import TransferConfig
@@ -178,6 +178,21 @@ class TestS3PitRestore(unittest.TestCase):
         do_restore()
         print("Restoring and checking for dmarker_restore test")
         self.assertTrue(self.check_tree(path, content))
+
+class CsvFormatter(logging.Formatter):
+    def __init__(self):
+        super().__init__()
+        self.output = io.StringIO()
+        self.writer = csv.writer(self.output)
+
+    def format(self, record):
+        csvrecord = shlex.split(record.msg)
+        if(record.msg != 'Found credentials in environment variables.'): 
+            self.writer.writerow([record.levelname, csvrecord[0], csvrecord[1], csvrecord[2], csvrecord[3]])
+        data = self.output.getvalue()
+        self.output.truncate(0)
+        self.output.seek(0)
+        return data.strip()
 
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
@@ -438,7 +453,7 @@ if __name__=='__main__':
     if not logfileName:
         logfileName = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
         
-    logfile = "logs/" + logfileName +".log"
+    logfile = "logs/" + logfileName +".csv"
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s %(levelname)s %(message)s',
@@ -447,7 +462,8 @@ if __name__=='__main__':
             logging.StreamHandler()
         ]
     )
-
+    logging.root.handlers[0].setFormatter(CsvFormatter())
+    
     if args.dest_bucket is None and not args.dest:
         parser.error("Either provide destination bucket using (-B ) or provide destination for local restore (-d)")
         sys.exit(1)
