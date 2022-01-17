@@ -1,5 +1,6 @@
-import subprocess, json
+import subprocess, json, sys
 from datetime import datetime
+from pathlib import Path
 
 # Function to ask user confirmation
 def ask_yesno(question):
@@ -16,6 +17,11 @@ def ask_yesno(question):
             return False
         else:
             print("Please respond by yes or no.") 
+
+# Check python version 
+if sys.version_info[0] < 3:
+    print('Script is supported only for python 3 version')
+    sys.exit()
 
 # Read input file and parameters
 file = open('input.json')
@@ -49,7 +55,8 @@ input = ask_yesno("Continue ? (y/n)")
 
 if input is True: 
     print("user consent. Starting")
-    scriptcmd = f'python s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates --logFileName "{logFileName}" --delimiter "{delimiter}" --ignore-list "{ignoreList}"'
+    pycmd = Path(sys.executable).stem
+    scriptcmd = f'{pycmd} s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates --logFileName "{logFileName}" --delimiter "{delimiter}" --ignore-list "{ignoreList}"'
     
     #Process the records
     for index, item in enumerate(items, start=1):
