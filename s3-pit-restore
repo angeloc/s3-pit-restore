@@ -30,7 +30,7 @@
 # SOFTWARE.
 
 import os, sys, time, signal, argparse, boto3, botocore, \
-        unittest, concurrent.futures, shutil, uuid, time, logging
+        unittest, concurrent.futures, shutil, uuid, time, logging, ast
 from datetime import datetime, timezone
 from dateutil.parser import parse
 from s3transfer.manager import TransferConfig
@@ -330,7 +330,7 @@ def do_restore():
 
     paginator = client.get_paginator('list_object_versions')
     obj_needs_be_deleted = {}
-    page_iterator = paginator.paginate(Bucket=args.bucket, Prefix=args.prefix)
+    page_iterator = paginator.paginate(Bucket=args.bucket, Prefix=args.prefix, Delimiter=args.delimiter)
     # Delete markers can get desynchronized with the versions markers in the pagination system below.
     # To avoid this, we will push from page to page the desynchronized markers until they fall on the
     # page they should (the one with the versioning markers for the same set of files)
@@ -346,6 +346,10 @@ def do_restore():
         previous_deletemarkers = []
         dmarker = {"Key":""}
         for obj in versions:
+
+            if any(ignore_list in obj['Key'] for ignore_list in args.ignore_list):
+                continue
+
             if last_obj["Key"] == obj["Key"]:
                 # We've had a newer version or a delete of this key
                 continue
@@ -431,7 +435,11 @@ if __name__=='__main__':
     parser.add_argument('--skip-deletion', help='skip deletion of files created after the timestamp', action='store_true')
     parser.add_argument('--sse', choices=['AES256', 'aws:kms'], help='Specify server-side encryption')
     parser.add_argument('--logFileName',help='name of log file')
+    parser.add_argument('--delimiter',help='delimiter',  default="")
+    parser.add_argument('--ignore-list', help="ignore list", default="[]")
     args = parser.parse_args()
+
+    args.ignore_list = ast.literal_eval(args.ignore_list)
     
     # setup logging
     logfileName = args.logFileName

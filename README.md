@@ -39,7 +39,7 @@ $ pip3 install s3-pit-restore
 
 - Run the script:
 ```bash
-$ python script.js
+$ python script.py
 ```
 - - -
 
@@ -51,9 +51,13 @@ We need to provide values in `input.json`.
 	"dryRun": true,
 	"skipDeletion": true,
 	"bucket": "ms-versioning-bucket",
+	"delimiter": "/class"
 	"timestamp": "12-23-2021 15:25:00 +5:30",
 	"items": [
-		 "level1/level2-1/"
+		 "level1/level2-1"
+	],
+	"ignoreList": [
+			"/group"
 	]
 }
 ```
@@ -71,6 +75,14 @@ We need to provide values in `input.json`.
 - timestamp - The date and time at which the folder will be restored. The timestamp format is **MM-DD-YYYY HH:MM:SS +UTC**. Note: The timestamp must include the timezone offset.
 
 - items - list the folders which will be restored. Multiple folders/files can be passed
+
+- delimiter
+	- Files would not be fetched from s3 if the file path had a delimiter string in it.
+	- If empty string is passed, list-object-versions method works normally.
+
+- ignoreList
+	- The files containing the ignorelist array string will be skipped from further processing in the script.
+	- if empty array is passed, script will work normally.
 
 ## Output 
 The output is logged in console and in the log file created under directory `/logs`

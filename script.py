@@ -27,6 +27,8 @@ timestamp = data["timestamp"]
 skipDeletion = data["skipDeletion"]
 items = data["items"]
 logFileName = datetime.now().strftime('%Y-%m-%d %H-%M-%S')
+delimiter = data["delimiter"]
+ignoreList = data["ignoreList"]
 
 # Display the config parameters
 outputStr = '''
@@ -37,6 +39,8 @@ outputStr = '''
         Bucket:        {bucket}
         Timestamp:     {timestamp}
         Items:         {items}
+        Delimiter:     {delimiter}
+        Ignore List:   {ignoreList}
     '''
 print(outputStr.format(**locals()))
 
@@ -45,7 +49,7 @@ input = ask_yesno("Continue ? (y/n)")
 
 if input is True: 
     print("user consent. Starting")
-    scriptcmd = f'python s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates --logFileName "{logFileName}"'
+    scriptcmd = f'python s3-pit-restore -b {bucket} -B {bucket} -t "{timestamp}" --avoid-duplicates --logFileName "{logFileName}" --delimiter "{delimiter}" --ignore-list "{ignoreList}"'
     
     #Process the records
     for index, item in enumerate(items, start=1):
