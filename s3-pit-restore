@@ -178,6 +178,41 @@ class TestS3PitRestore(unittest.TestCase):
         print("Restoring and checking for dmarker_restore test")
         self.assertTrue(self.check_tree(path, content))
 
+class TestS3PitRestoreSameBucket(unittest.TestCase):
+    def check_versioning(self, s3):
+        bucket_versioning = s3.BucketVersioning(args.bucket)
+        bucket_versioning.load()
+
+        print("Checking bucket versioning ... ", end='', flush=True)
+        self.assertNotEqual(bucket_versioning.status, None)
+        print("enabled!")
+
+    def test_no_op(self):
+        print('Running test_no_op ...')
+        test_content = str(uuid.uuid4())
+        test_key = f'test_no_op/{str(uuid.uuid4())}'
+
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
+        self.check_versioning(s3)
+
+        print("Preparing ...")
+        object = s3.Object(args.bucket, test_key)
+        object.put(Body=test_content)
+        time.sleep(1)
+
+        args.prefix = test_key
+        args.timestamp = None
+        args.from_timestamp = None
+
+        print("Restoring ...")
+        do_restore()
+
+        print("Checking ...")
+        result = s3.meta.client.list_object_versions(Bucket=args.bucket, Prefix=test_key)
+        self.assertEqual(1, len(result['Versions']))
+        self.assertEqual(0, len(result.get("DeleteMarkers", [])))
+
+
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
     for future in list(futures.keys()):
@@ -293,6 +328,10 @@ def do_restore():
     dest = args.dest
     last_obj = {}
     last_obj["Key"] = ""
+    # The key that was given for the latest version that was flagged with IsLatest=true.
+    is_latest_key = None
+    # The etag that was given for the latest version that was flagged with IsLatest=true.
+    is_latest_etag = None
 
     if args.debug: boto3.set_stream_logger('botocore')
 
@@ -327,6 +366,10 @@ def do_restore():
                 # We've had a newer version or a delete of this key
                 continue
 
+            if obj["IsLatest"]:
+                is_latest_key = obj["Key"]
+                is_latest_etag = obj["ETag"]
+
             version_date = obj["LastModified"]
 
             if version_date > pit_end_date or version_date < pit_start_date:
@@ -353,7 +396,16 @@ def do_restore():
 
             if args.dest_bucket is not None:
                 obj_needs_be_deleted.pop(obj["Key"], None)
-                handled_by_copy(obj)
+
+                # We can skip the restore if the current version is equivalent to the newest version
+                # of the object and if we want to restore it to the same bucket and path.
+                # is_latest_key == obj["Key"] also ensures that the object is not currently deleted,
+                # because a version with IsLatest=true was observed.
+                if is_latest_key != obj["Key"] or \
+                        is_latest_etag != obj["ETag"] or \
+                        args.bucket != args.dest_bucket or \
+                        args.dest_prefix:
+                    handled_by_copy(obj)
                 continue
 
             if not handled_by_standard(obj):
@@ -424,6 +476,14 @@ if __name__=='__main__':
         if args.dest:
             itersuite = unittest.TestLoader().loadTestsFromTestCase(TestS3PitRestore)
             runner.run(itersuite)
+
+        # Restore in same bucket, ignoring original dest_bucket
+        args.dest_bucket = args.bucket
+        itersuite = unittest.TestLoader().loadTestsFromTestCase(TestS3PitRestore)
+        runner.run(itersuite)
+
+        itersuite = unittest.TestLoader().loadTestsFromTestCase(TestS3PitRestoreSameBucket)
+        runner.run(itersuite)
 
         # Restore back dest_bucket state
         args.dest_bucket = dest_bucket
