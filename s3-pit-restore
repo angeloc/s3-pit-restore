@@ -212,6 +212,33 @@ class TestS3PitRestoreSameBucket(unittest.TestCase):
         self.assertEqual(1, len(result['Versions']))
         self.assertEqual(0, len(result.get("DeleteMarkers", [])))
 
+    def test_no_op_delete(self):
+        print('Running test_no_op_delete ...')
+        test_content = str(uuid.uuid4())
+        test_key = f'test_no_op_delete/{str(uuid.uuid4())}'
+
+        s3 = boto3.resource('s3', endpoint_url=args.endpoint_url)
+        self.check_versioning(s3)
+
+        print("Preparing ...")
+        object = s3.Object(args.bucket, test_key)
+        object.put(Body=test_content)
+        time.sleep(1)
+        object.delete()
+        time.sleep(1)
+
+        args.prefix = test_key
+        args.timestamp = None
+        args.from_timestamp = None
+
+        print("Restoring ...")
+        do_restore()
+
+        print("Checking ...")
+        result = s3.meta.client.list_object_versions(Bucket=args.bucket, Prefix=test_key)
+        self.assertEqual(1, len(result['Versions']))
+        self.assertEqual(1, len(result.get("DeleteMarkers", [])))
+
 
 def signal_handler(signal, frame):
     executor.shutdown(wait=False)
@@ -360,7 +387,7 @@ def do_restore():
         deletemarkers = previous_deletemarkers + page.get("DeleteMarkers", [])
         # And since they have been added, we remove them from the overflow list
         previous_deletemarkers = []
-        dmarker = {"Key":""}
+        dmarker = {"Key": "", "IsLatest": False}
         for obj in versions:
             if last_obj["Key"] == obj["Key"]:
                 # We've had a newer version or a delete of this key
@@ -381,6 +408,9 @@ def do_restore():
             # (both versions and deletemarkers list are sorted in alphabetical order of the key, and then in reverse time order for each key)
             while deletemarkers and (dmarker["Key"] < obj["Key"] or (dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > pit_end_date)):
                 dmarker = deletemarkers.pop(0)
+                if dmarker['IsLatest']:
+                    # The given object is already deleted and does not have to be deleted again.
+                    obj_needs_be_deleted.pop(dmarker["Key"], None)
 
             #skip dmarker if it's latest than pit_end_date
             if dmarker["Key"] == obj["Key"] and dmarker["LastModified"] > obj["LastModified"] and dmarker["LastModified"] <= pit_end_date:
@@ -425,6 +455,14 @@ def do_restore():
                 except Exception as ex:
                     print('"%s" %s %s %s %s "ERROR: %s"' % (obj["LastModified"], obj["VersionId"], obj["Size"], obj["StorageClass"], obj["Key"], ex), file=sys.stderr)
                 del(futures[future])
+
+    # Process leftover delete markers.
+    while previous_deletemarkers:
+        dmarker = previous_deletemarkers.pop(0)
+        if dmarker['IsLatest']:
+            # The given object is already deleted and does not have to be deleted again.
+            obj_needs_be_deleted.pop(dmarker["Key"], None)
+
     # delete objects which came in existence after pit_end_date only if the destination bucket is same as source bucket and restoring to same object key
     if args.dest_bucket == args.bucket and not args.dest_prefix:
         for key in obj_needs_be_deleted:
