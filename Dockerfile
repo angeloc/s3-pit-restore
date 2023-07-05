@@ -4,16 +4,20 @@ FROM python:3-alpine3.17
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
-LABEL org.label-schema.build-date=${BUILD_DATE} \
-          org.label-schema.name="s3-pit-restore" \
-          org.label-schema.description="a point in time restore tool for Amazon S3." \
-          org.label-schema.vcs-ref=${VCS_REF} \
-          org.label-schema.vcs-url="https://github.com/angeloc/s3-pit-restore" \
-          org.label-schema.vendor="angeloc" \
-          org.label-schema.version=${VERSION} \
-          org.label-schema.schema-version="v0.9"
+LABEL     org.opencontainers.image.created=${BUILD_DATE} \
+          org.opencontainers.image.url="https://github.com/angeloc/s3-pit-restore" \
+          org.opencontainers.image.version=${VERSION} \
+          org.opencontainers.image.revision=${VCS_REF} \
+          org.opencontainers.image.vendor="angeloc" \
+          org.opencontainers.image.licenses="MIT" \
+          org.opencontainers.image.title="s3-pit-restore" \
+          org.opencontainers.image.description="a point in time restore tool for Amazon S3."
 
-RUN pip3 --no-cache-dir install s3-pit-restore awscli
+RUN pip3 --no-cache-dir install awscli
+
+ADD . /tmp/
+WORKDIR /tmp/
+RUN python3 setup.py install
 
 ENTRYPOINT [ "s3-pit-restore" ]
 CMD [ "-h" ]
