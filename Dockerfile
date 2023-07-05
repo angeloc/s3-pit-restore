@@ -1,6 +1,6 @@
 FROM python:3-alpine3.17
 
-# Build-time metadata as defined at http://label-schema.org
+# Build-time metadata as defined at https://github.com/opencontainers/image-spec/blob/main/annotations.md
 ARG BUILD_DATE
 ARG VCS_REF
 ARG VERSION
