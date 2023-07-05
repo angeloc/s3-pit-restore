@@ -13,8 +13,6 @@ LABEL     org.opencontainers.image.created=${BUILD_DATE} \
           org.opencontainers.image.title="s3-pit-restore" \
           org.opencontainers.image.description="a point in time restore tool for Amazon S3."
 
-RUN pip3 --no-cache-dir install awscli
-
 ADD . /tmp/
 WORKDIR /tmp/
 RUN python3 setup.py install
