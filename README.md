@@ -101,13 +101,10 @@ or clone the repository and launch:
 ## Command line options
 
 ```
-usage: s3-pit-restore [-h] -b BUCKET [-B DEST_BUCKET] [-d DEST]
-                      [-P DEST_PREFIX] [-p PREFIX] [-t TIMESTAMP]
-                      [-f FROM_TIMESTAMP] [-e] [-v] [--dry-run] [--debug]
-                      [--test] [--max-workers MAX_WORKERS]
+usage: s3-pit-restore [-h] -b BUCKET [-B DEST_BUCKET] [-d DEST] [-p PREFIX] [-P DEST_PREFIX] [-t TIMESTAMP] [-f FROM_TIMESTAMP] [-e] [-v] [-u ENDPOINT_URL] [--dry-run] [--debug] [--test] [--max-workers MAX_WORKERS]
                       [--sse {AES256,aws:kms}]
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -b BUCKET, --bucket BUCKET
                         s3 bucket to restore from
@@ -124,13 +121,15 @@ optional arguments:
                         starting point in time to restore from
   -e, --enable-glacier  enable recovering from glacier
   -v, --verbose         print verbose informations from s3 objects
+  -u ENDPOINT_URL, --endpoint-url ENDPOINT_URL
+                        use another endpoint URL for s3 service
   --dry-run             execute query without transferring files
   --debug               enable debug output
   --test                s3 pit restore testing
   --max-workers MAX_WORKERS
                         max number of concurrent download requests
-  --sse ALGORITHM
-                        specify what SSE algorithm you would like to use for the copy
+  --sse {AES256,aws:kms}
+                        Specify server-side encryption
 ```
 
 ## Docker Usage
@@ -140,7 +139,7 @@ optional arguments:
 mkdir restore
 
 # restore a point in time copy under the restore dir you just created
-docker run -ti --rm --name=s3-pit-restore -v {$PWD}/restore:/tmp -e AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID] -e AWS_SECRET_ACCESS_KEY=[AWS_ACCESS_KEY_ID] angelocompagnucci/s3-pit-restore:latest s3-pit-restore -b [Bucket] -p [Prefix] -d /tmp -t "01-25-2018 10:59:50 +2"
+docker run -ti --rm --name=s3-pit-restore -v {$PWD}/restore:/tmp -e AWS_ACCESS_KEY_ID=[AWS_ACCESS_KEY_ID] -e AWS_SECRET_ACCESS_KEY=[AWS_ACCESS_KEY_ID] angelocompagnucci/s3-pit-restore -b [Bucket] -p [Prefix] -d /tmp -t "01-25-2018 10:59:50 +2"
 ```
 
 ## Testing
