@@ -155,3 +155,78 @@ s3-pit-restore comes with a testing suite. You can run it with:
 
 ### Run all the test cases:
 	`$ ./s3-pit-restore -b my-bucket -B restore-bucket-s3 -d /tmp/ -P restore-path --test`
+
+
+## Point-in-time restore strategy
+
+Restoring an S3 bucket to a given point in time means traversing all object
+versions and delete markers to determine which ones were the latest at the given
+time.
+
+The overall strategy is fairly simple, since it's a matter of comparing
+timestamps of versions and delete markers, and restoring the one that's closest
+in time to the given point-in-time.
+
+### S3 API details
+
+The source of versions and delete markers in an S3 bucket is the
+ListObjectVersions API call. The response is paged with a maximum of 1000
+entries per page. Each page may have a list of up to 1000 versions and/or a
+separate list of up to 1000 delete markers.
+
+The versions and delete markers are returned in order of key name and recency
+(newest first). As S3 iterates over these, it appends versions and delete
+markers to separate lists and responds with a page when it reaches the requested
+page size (1000 by default).
+
+For reference, [here's how localstack implements it](https://github.com/localstack/localstack/blob/v2.3.2/localstack/services/s3/v3/provider.py#L1491).
+
+Examples:
+
+* If there are 1001 versions of a given key, then the first page contains only a
+  list of versions, and that list has the most recent 1000 versions of the
+  object. The next page has 1 version (the oldest) of that same object.
+
+* If there are 1001 versions and 1001 delete markers for a given key, then:
+
+  * If all the delete markers were placed after the versions, then:
+
+    * Page 1: 1000 delete markers
+
+    * Page 2: 1 delete marker, 999 versions
+
+    * Page 3: 2 versions
+
+  * If the delete markers and versions are mixed in time, say if an object is
+    deleted and written over and over, then:
+
+    * Page 1: 500 versions, 500 delete markers
+
+    * Page 2: 500 versions, 500 delete markers
+
+    * Page 3: 1 version, 1 delete marker
+
+The number of versions or delete markers for a key can easily span two or more
+pages, so they must be tracked between pages. Only when a new key name is
+observed can we be sure that we have seen all versions or delete markers for a
+key.
+
+### Ordering
+
+Since S3 has 1-second granularity on the LastModified timestamp, multiple
+versions and/or delete markers may end up having the same timestamp.
+
+To determine which version or delete marker is newest when they all have the
+same LastModified timestamp:
+
+* If the IsLatest attribute is true, then this object is the newest.
+
+* For previous versions where neither is the latest, assume that S3's order is
+  correct and use the first of the two versions as the most recent one.
+
+* For previous delete markers, it doesn't really matter: They both represent a
+  deletion anyway.
+
+* For a previous version vs a delete marker, it is impossible to say which is
+  the most recent one since they are kept in different lists. In this case, the
+  version takes precedence over the delete marker.
